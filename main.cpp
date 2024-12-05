@@ -17,9 +17,11 @@
 #include "graph.h"
 #include "ZoomableGraphicsView.h"
 
-class MapDistanceApp : public QMainWindow {
+class MapDistanceApp : public QMainWindow
+{
 public:
-    MapDistanceApp(QWidget *parent = nullptr) : QMainWindow(parent) {
+    MapDistanceApp(QWidget *parent = nullptr) : QMainWindow(parent)
+    {
         // Central Widget and Main Layout
         QWidget *centralWidget = new QWidget(this);
         QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
@@ -63,8 +65,7 @@ public:
         calculateButton = new QPushButton("Calculate Distance", this);
         calculateButton->setStyleSheet(
             "background-color: #27ae60; color: white; font-weight: bold; padding: 8px; border-radius: 5px;"
-            "hover { background-color: #2ecc71; }"
-            );
+            "hover { background-color: #2ecc71; }");
         connect(calculateButton, &QPushButton::clicked, this, &MapDistanceApp::calculateDistance);
 
         // Layout Setup
@@ -104,7 +105,8 @@ public:
         mapView->viewport()->installEventFilter(this);
     }
 
-    void renderGraph(const Graph& graph) {
+    void renderGraph(const Graph &graph)
+    {
         mapScene->clear();
 
         // Encontrar rangos de coordenadas
@@ -113,8 +115,9 @@ public:
         double minLat = std::numeric_limits<double>::max();
         double maxLat = std::numeric_limits<double>::lowest();
 
-        const std::vector<Node>& nodes = graph.getNodes();
-        for (const Node& node : nodes) {
+        const std::vector<Node> &nodes = graph.getNodes();
+        for (const Node &node : nodes)
+        {
             minLon = std::min(minLon, node.longitude);
             maxLon = std::max(maxLon, node.longitude);
             minLat = std::min(minLat, node.latitude);
@@ -122,37 +125,42 @@ public:
         }
 
         // Dimensiones de la vista
-        double viewWidth = mapView->width() - 20;  // Margen
-        double viewHeight = mapView->height() - 20;
+        double viewWidth = mapView->width();
+        double viewHeight = mapView->height();
 
-        // Funciones de mapeo de coordenadas
+        // Escalamiento
+        double scaleX = viewWidth / (maxLon - minLon + 1e-6);
+        double scaleY = viewHeight / (maxLat - minLat + 1e-6);
+
+        // Funciones de mapeo
         auto mapX = [&](double lon) {
-            return ((lon - minLon) / (maxLon - minLon)) * viewWidth + 10;
+            return (lon - minLon) * scaleX;
         };
 
         auto mapY = [&](double lat) {
-            return ((maxLat - lat) / (maxLat - minLat)) * viewHeight + 10;
+            return (lat - minLat) * scaleY;
         };
 
-        // Dibujar aristas primero
-        for (const Edge& edge : graph.getEdges()) {
-            const Node& node1 = graph.getNode(edge.node1);
-            const Node& node2 = graph.getNode(edge.node2);
+        // Dibujar aristas
+        QPen edgePen(QColor(100, 100, 255), 2);
+        for (const Edge &edge : graph.getEdges())
+        {
+            const Node &node1 = graph.getNode(edge.node1);
+            const Node &node2 = graph.getNode(edge.node2);
 
             mapScene->addLine(
                 mapX(node1.longitude), mapY(node1.latitude),
                 mapX(node2.longitude), mapY(node2.latitude),
-                QPen(Qt::blue, 2)  // Línea más gruesa
-                );
+                edgePen);
         }
 
-        // Dibujar nodos encima de las aristas
-        for (const Node& node : nodes) {
-            QGraphicsEllipseItem* ellipse = mapScene->addEllipse(
-                mapX(node.longitude) - 5, mapY(node.latitude) - 5,  // Centrar el círculo
-                10, 10,  // Tamaño del nodo
-                QPen(Qt::red), QBrush(Qt::red)  // Nodos rojos
-                );
+        // Dibujar nodos
+        for (const Node &node : nodes)
+        {
+            QGraphicsEllipseItem *ellipse = mapScene->addEllipse(
+                mapX(node.longitude) - 2, mapY(node.latitude) - 2,
+                4, 4, // Tamaño ajustado
+                QPen(Qt::red), QBrush(Qt::red));
             ellipse->setData(0, node.id);
         }
 
@@ -160,14 +168,17 @@ public:
         mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
     }
 
+
 protected:
-    void resizeEvent(QResizeEvent *event) override {
+    void resizeEvent(QResizeEvent *event) override
+    {
         QMainWindow::resizeEvent(event);
         mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
     }
 
 private slots:
-    void calculateDistance() {
+    void calculateDistance()
+    {
         // Example Logic for Calculations
         point1Coord->setText("<b>Lat:</b> 40.7128, <b>Lon:</b> -74.0060");
         point2Coord->setText("<b>Lat:</b> 34.0522, <b>Lon:</b> -118.2437");
@@ -184,22 +195,26 @@ private:
     QLabel *realDistance;
     QPushButton *calculateButton;
 
-    QLabel *createSubtitleLabel(const QString &text) {
+    QLabel *createSubtitleLabel(const QString &text)
+    {
         QLabel *label = new QLabel(text, this);
         label->setStyleSheet("background-color: #bdc3c7; color: black; font-weight: bold; padding: 5px;");
         return label;
     }
 
-    QLabel *createValueLabel(const QString &text) {
+    QLabel *createValueLabel(const QString &text)
+    {
         QLabel *label = new QLabel(text, this);
         label->setStyleSheet("background-color: white; color: black; padding: 5px; border: 1px solid #95a5a6;");
         return label;
     }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
     Graph graph;
+    // Graph graph("/home/aaroncs25/UTEC/EDA/eda-project-gui/nodes.txt", "/home/aaroncs25/UTEC/EDA/eda-project-gui/edges.txt");
 
     MapDistanceApp window;
     window.renderGraph(graph);
