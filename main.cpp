@@ -19,8 +19,11 @@
 
 class MapDistanceApp : public QMainWindow
 {
+private:
+    Graph &graph;
+
 public:
-    MapDistanceApp(QWidget *parent = nullptr) : QMainWindow(parent)
+    MapDistanceApp(Graph &graph, QWidget *parent = nullptr) : QMainWindow(parent), graph(graph)
     {
         // Central Widget and Main Layout
         QWidget *centralWidget = new QWidget(this);
@@ -186,12 +189,57 @@ protected:
         mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
     }
 
+    void mousePressEvent(QMouseEvent *event) override
+{
+    QPointF scenePos = mapView->mapToScene(event->pos());
+    QGraphicsItem *clickedItem = mapScene->itemAt(scenePos, QTransform());
+    if (clickedItem && clickedItem->type() == QGraphicsEllipseItem::Type)
+    {
+        QGraphicsEllipseItem *nodeItem = static_cast<QGraphicsEllipseItem *>(clickedItem);
+        int nodeId = nodeItem->data(0).toInt();
+
+        if (selectedNode1 == -1 || selectedNode2 == -1)
+        {
+            if (selectedNode1 == -1)
+            {
+                selectedNode1 = nodeId;
+                nodeItem->setBrush(QBrush(Qt::green));
+                point1Coord->setText(QString("Node ID: %1").arg(selectedNode1));
+            }
+            else if (selectedNode2 == -1 && selectedNode1 != nodeId)
+            {
+                selectedNode2 = nodeId;
+                nodeItem->setBrush(QBrush(Qt::green));
+                point2Coord->setText(QString("Node ID: %1").arg(selectedNode2));
+            }
+        }
+        else
+        {
+            resetNodeColors();
+            selectedNode1 = nodeId;
+            selectedNode2 = -1;
+            nodeItem->setBrush(QBrush(Qt::green));
+            point1Coord->setText(QString("Node ID: %1").arg(selectedNode1));
+            point2Coord->setText("<i>Not selected</i>");
+        }
+    }
+}
+
+
 private slots:
     void calculateDistance()
     {
         // Example Logic for Calculations
-        point1Coord->setText("<b>Lat:</b> 40.7128, <b>Lon:</b> -74.0060");
-        point2Coord->setText("<b>Lat:</b> 34.0522, <b>Lon:</b> -118.2437");
+        double longitud1 = this->graph.getNode(selectedNode1).longitude; 
+        double latitud1 = this->graph.getNode(selectedNode1).latitude;
+        double longitud2 = this->graph.getNode(selectedNode2).longitude;
+        double latitud2 = this->graph.getNode(selectedNode2).latitude;
+        // point1Coord->setText("<b>Lat:</b> 40.7128, <b>Lon:</b> -74.0060");
+        point1Coord->setText(QString("<b>Lat:</b> %1, <b>Lon:</b> %2").arg(latitud1).arg(longitud1));
+        // point2Coord->setText("<b>Lat:</b> 34.0522, <b>Lon:</b> -118.2437");
+        point2Coord->setText(QString("<b>Lat:</b> %1, <b>Lon:</b> %2").arg(latitud2).arg(longitud2));
+
+        // TODO: ADD IMPLEMENTED FUNCTION
         modelDistance->setText("<b>3.94 km</b>");
         realDistance->setText("<b>4.12 km</b>");
     }
@@ -204,6 +252,8 @@ private:
     QLabel *modelDistance;
     QLabel *realDistance;
     QPushButton *calculateButton;
+    int selectedNode1 = -1;
+    int selectedNode2 = -1;
 
     QLabel *createSubtitleLabel(const QString &text)
     {
@@ -218,6 +268,19 @@ private:
         label->setStyleSheet("background-color: white; color: black; padding: 5px; border: 1px solid #95a5a6;");
         return label;
     }
+
+    void resetNodeColors()
+    {
+        foreach (QGraphicsItem *item, mapScene->items())
+        {
+            if (item->type() == QGraphicsEllipseItem::Type)
+            {
+                QGraphicsEllipseItem *nodeItem = static_cast<QGraphicsEllipseItem *>(item);
+                nodeItem->setBrush(QBrush(Qt::red));
+            }
+        }
+    }
+
 };
 
 int main(int argc, char *argv[])
@@ -226,7 +289,7 @@ int main(int argc, char *argv[])
     Graph graph;
     // Graph graph("/home/aaroncs25/UTEC/EDA/eda-project-gui/nodes.txt", "/home/aaroncs25/UTEC/EDA/eda-project-gui/edges.txt");
 
-    MapDistanceApp window;
+    MapDistanceApp window(graph);
     window.renderGraph(graph);
     window.show();
     return app.exec();
