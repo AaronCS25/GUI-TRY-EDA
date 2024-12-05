@@ -10,14 +10,12 @@
 #include <QGraphicsEllipseItem>
 #include <QGraphicsLineItem>
 #include <limits>
+#include <QGraphicsView>
+#include <QWheelEvent>
+#include <QMouseEvent>
 
 #include "graph.h"
-
-
-// ------------------------------
-
-
-// ------------------------------
+#include "ZoomableGraphicsView.h"
 
 class MapDistanceApp : public QMainWindow {
 public:
@@ -29,7 +27,10 @@ public:
         mainLayout->setSpacing(15);
 
         // Map View
-        mapView = new QGraphicsView(this);
+        // mapView = new QGraphicsView(this);
+        // mapScene = new QGraphicsScene(this);
+
+        mapView = new ZoomableGraphicsView(this);
         mapScene = new QGraphicsScene(this);
         mapView->setScene(mapScene);
         mapView->setFrameStyle(QFrame::NoFrame);
@@ -92,6 +93,7 @@ public:
         // Configuraciones importantes para zoom y scroll
         mapView->setRenderHint(QPainter::Antialiasing);
         mapView->setDragMode(QGraphicsView::ScrollHandDrag);
+        mapView->setInteractive(true);
         mapView->setOptimizationFlags(QGraphicsView::DontSavePainterState);
         mapView->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
         mapView->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
@@ -155,6 +157,12 @@ public:
         }
 
         // Ajustar vista
+        mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
+    }
+
+protected:
+    void resizeEvent(QResizeEvent *event) override {
+        QMainWindow::resizeEvent(event);
         mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
     }
 
