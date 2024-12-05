@@ -124,13 +124,16 @@ public:
             maxLat = std::max(maxLat, node.latitude);
         }
 
-        // Dimensiones de la vista
-        double viewWidth = mapView->width();
-        double viewHeight = mapView->height();
+        // Margen adicional para expandir el grafo
+        double margin = 50.0;
 
-        // Escalamiento
-        double scaleX = viewWidth / (maxLon - minLon + 1e-6);
-        double scaleY = viewHeight / (maxLat - minLat + 1e-6);
+        // Dimensiones del grafo en el espacio lógico
+        double graphWidth = maxLon - minLon + margin;
+        double graphHeight = maxLat - minLat + margin;
+
+        // Escalamiento al espacio gráfico
+        double scaleX = (graphWidth) / (maxLon - minLon + 1e-8);
+        double scaleY = (graphHeight) / (maxLat - minLat + 1e-8);
 
         // Funciones de mapeo
         auto mapX = [&](double lon) {
@@ -142,7 +145,7 @@ public:
         };
 
         // Dibujar aristas
-        QPen edgePen(QColor(100, 100, 255), 2);
+        QPen edgePen(QColor(100, 100, 255), 1); // Ajuste de grosor para grandes datos
         for (const Edge &edge : graph.getEdges())
         {
             const Node &node1 = graph.getNode(edge.node1);
@@ -155,16 +158,23 @@ public:
         }
 
         // Dibujar nodos
+        QBrush nodeBrush(Qt::red);
         for (const Node &node : nodes)
         {
             QGraphicsEllipseItem *ellipse = mapScene->addEllipse(
                 mapX(node.longitude) - 2, mapY(node.latitude) - 2,
                 4, 4, // Tamaño ajustado
-                QPen(Qt::red), QBrush(Qt::red));
+                QPen(Qt::NoPen), nodeBrush);
             ellipse->setData(0, node.id);
         }
 
-        // Ajustar vista
+        // Expandir límites de la escena
+        QRectF graphBounds(
+            mapX(minLon) - margin, mapY(minLat) - margin,
+            graphWidth * scaleX, graphHeight * scaleY);
+        mapScene->setSceneRect(graphBounds);
+
+        // Ajustar vista para mostrar todo el grafo
         mapView->fitInView(mapScene->itemsBoundingRect(), Qt::KeepAspectRatio);
     }
 
